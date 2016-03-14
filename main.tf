@@ -6,8 +6,51 @@ provider "aws" {
 # Elasticsearch
 ##############################################################################
 
+resource "aws_iam_instance_profile" "elasticsearch" {
+  name = "${var.iam_instance_profile_name}"
+  roles = ["${aws_iam_role.elasticsearch.name}"]
+}
+
+resource "aws_iam_role_policy" "elasticsearch" {
+  name = "${var.iam_role_policy_name}"
+  role = "${aws_iam_role.elasticsearch.id}"
+  policy = <<EOF
+{
+  "Statement": [
+    {
+      "Action": [
+        "ec2:DescribeInstances"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ],
+  "Version": "2012-10-17"
+  }
+EOF
+}
+
+resource "aws_iam_role" "elasticsearch" {
+    name = "${var.iam_role_name}"
+    assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_security_group" "elasticsearch" {
-  name = "${var.security_group_name}-elasticsearch"
+  name = "${var.security_group_name}"
   description = "Elasticsearch ports with ssh"
   vpc_id = "${var.vpc_id}"
 
@@ -35,11 +78,10 @@ resource "aws_security_group" "elasticsearch" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags {
-    Name = "${var.es_cluster}-elasticsearch"
-    stream = "${var.stream_tag}"
-    cluster = "${var.es_cluster}"
-  }
+#  tags {
+#    Name = "${var.es_cluster}-elasticsearch"
+#    cluster = "${var.es_cluster}"
+#  }
 
   lifecycle {
     create_before_destroy = true
@@ -50,18 +92,14 @@ resource "template_file" "user_data" {
   template = "${path.module}/templates/user-data.tpl"
 
   vars {
-    dns_server              = "${var.dns_server}"
     num_nodes               = "${var.instances}"
-    consul_dc               = "${var.consul_dc}"
-    atlas                   = "${var.atlas}"
-    atlas_token             = "${var.atlas_token}"
-    volume_name             = "${var.volume_name}"
-    elasticsearch_data_dir  = "${var.elasticsearch_data}"
-    es_cluster  = "${var.es_cluster}"
-    es_environment  = "${var.es_environment}"
-    security_groups = "${aws_security_group.elasticsearch.id}"
-    aws_region  = "${var.aws_region}"
-    availability_zones = "${var.availability_zones}"
+    aws_ebs_volume_path     = "${var.aws_ebs_volume_path}"
+    es_datadir              = "${var.es_datadir}"
+    es_cluster              = "${var.es_cluster}"
+    es_environment          = "${var.es_environment}"
+    aws_sg                  = "${aws_security_group.elasticsearch.id}"
+    aws_region              = "${var.aws_region}"
+    aws_availability_zones  = "${var.aws_availability_zones}"
   }
 
   lifecycle {
@@ -76,9 +114,7 @@ resource "aws_launch_configuration" "elasticsearch" {
   associate_public_ip_address = false
   ebs_optimized = false
   key_name = "${var.key_name}"
-# FIXME or not? makes it a pain with multiple clusters in an account, seperate iam main.tf instead?
-  #iam_instance_profile = "${aws_iam_instance_profile.elasticsearch.id}"
-  iam_instance_profile = "elasticSearchNode"
+  iam_instance_profile = "${aws_iam_instance_profile.elasticsearch.id}"
   user_data = "${template_file.user_data.rendered}"
 
   lifecycle {
@@ -86,14 +122,14 @@ resource "aws_launch_configuration" "elasticsearch" {
   }
 
   ebs_block_device {
-    device_name = "${var.volume_name}"
-    volume_size = "${var.volume_size}"
-    encrypted = "${var.volume_encryption}"
+    device_name = "${var.aws_ebs_volume_path}"
+    volume_size = "${var.aws_ebs_volume_size}"
+#    encrypted = "${var.aws_ebs_volume_encryption}"
   }
 }
 
 resource "aws_autoscaling_group" "elasticsearch" {
-  availability_zones = ["${split(",", var.availability_zones)}"]
+  availability_zones = ["${split(",", var.aws_availability_zones)}"]
   vpc_zone_identifier = ["${split(",", var.subnets)}"]
   max_size = "${var.instances}"
   min_size = "${var.instances}"
@@ -108,18 +144,18 @@ resource "aws_autoscaling_group" "elasticsearch" {
     propagate_at_launch = true
   }
   tag {
-    key = "Stream"
-    value = "${var.stream_tag}"
+    key = "Owner"
+    value = "${var.owner_tag}"
     propagate_at_launch = true
   }
   tag {
-    key = "ServerRole"
-    value = "Elasticsearch"
+    key = "Application"
+    value = "${var.application_tag}"
     propagate_at_launch = true
   }
   tag {
-    key = "Cost Center"
-    value = "${var.costcenter_tag}"
+    key = "Billing"
+    value = "${var.billing_tag}"
     propagate_at_launch = true
   }
   tag {
@@ -128,13 +164,8 @@ resource "aws_autoscaling_group" "elasticsearch" {
     propagate_at_launch = true
   }
   tag {
-    key = "consul"
-    value = "agent"
-    propagate_at_launch = true
-  }
-  tag {
-    key = "es_env"
-    value = "${var.es_environment}"
+    key = "Customer"
+    value = "${var.customer_tag}"
     propagate_at_launch = true
   }
 
@@ -142,4 +173,3 @@ resource "aws_autoscaling_group" "elasticsearch" {
     create_before_destroy = true
   }
 }
-

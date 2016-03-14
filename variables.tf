@@ -1,31 +1,36 @@
 ### MANDATORY ###
-variable "role_tag" {
-  description = "Role of the ec2 instance, defaults to <SERVICE>"
-  default = "SERVICE"
+
+variable "owner_tag" {
+  description = "Who owns the instance."
 }
 
 variable "environment_tag" {
-  description = "Role of the ec2 instance, defaults to <DEV>"
-  default = "DEV"
+  description = "Whether instance is production, test, development, etc."
+  default = "Development"
 }
 
-variable "costcenter_tag" {
-  description = "Role of the ec2 instance, defaults to <DEV>"
-  default = "DEV"
+variable "billing_tag" {
+  description = "Billing information for instance."
+  default = "n/a"
 }
 
-# group our resources
-variable "stream_tag" {
-  default = "default"
-}
-
-variable "environment" {
-  default = "default"
-}
-
-variable "es_environment" {
+variable "application_tag" {
+  description = "Application tag."
   default = "elasticsearch"
 }
+
+variable "customer_tag" {
+  description = "Customer"
+  default = "n/a"
+}
+
+#variable "environment" {
+#  default = "default"
+#}
+
+#variable "es_environment" {
+#  default = "elasticsearch"
+#}
 
 variable "es_cluster" {
   default = "elasticsearch"
@@ -40,23 +45,34 @@ variable "key_name" {
 }
 
 ### MANDATORY ###
-variable "iam_profile" {
-  description = "Elasticsearch IAM profile"
-}
-
 variable "aws_region" {
   description = "AWS region to launch servers."
-  default = "ap-southeast-2"
+  default = "us-west-2"
 }
 
-variable "availability_zones" {
+variable "aws_availability_zones" {
   description = "AWS region to launch servers."
-  default = "ap-southeast-2a,ap-southeast-2b"
+  default = "us-west-2a,us-west-2b"
 }
 
 variable "security_group_name" {
   description = "Name of security group to use in AWS."
-  default = "elasticsearch"
+  default = "app-elasticsearch"
+}
+
+variable "iam_role_name" {
+  description = "Name of the IAM Role applied to the EC2 instances."
+  default = "app-role-elasticsearch"
+}
+
+variable "iam_role_policy_name" {
+  description = "Name of the IAM Role Policy applied to the EC2 instances."
+  default = "app-policy-elasticsearch"
+}
+
+variable "iam_instance_profile_name" {
+  description = "Name of IAM instance profile."
+  default = "app-iam-ip-elasticsearch"
 }
 
 ###################################################################
@@ -133,36 +149,19 @@ variable "additional_security_groups" {
   default = ""
 }
 
-variable "volume_name" {
-  default = "/dev/sdh"
+variable "aws_ebs_volume_path" {
+  default = "/dev/xvda"
 }
 
-variable "volume_size" {
+variable "aws_ebs_volume_size" {
   default = "10"
 }
 
-variable "volume_encryption" {
+variable "aws_ebs_volume_encryption" {
   default = true
 }
 
-variable "elasticsearch_data" {
+variable "es_datadir" {
+  description = "Elasticsearch data directory."
   default = "/opt/elasticsearch/data"
-}
-
-###################################################################
-# Consul configuration below
-###################################################################
-
-variable "dns_server" {
-}
-
-variable "consul_dc" {
-  default = "dev"
-}
-
-variable "atlas" {
-  default = "example/atlas"
-}
-
-variable "atlas_token" {
 }
