@@ -89,12 +89,12 @@ variable "internal_cidr_blocks"{
 }
 
 ###################################################################
-# Subnet configuration below
+# AWS Subnet configuration
 ###################################################################
 
 ### MANDATORY ###
-variable "subnets" {
-  description = "subnets to deploy into"
+variable "aws_subnet_ids" {
+  description = "AWS subnet IDs, comma seperated, for deployment."
 }
 
 ###################################################################
@@ -103,8 +103,9 @@ variable "subnets" {
 
 ### MANDATORY ###
 # Amazon Linux built by packer
-# See https://github.com/nadnerb/packer-elastic-search
-variable "ami" {
+# See https://github.com/gsfjohnson/packer-elasticsearch
+variable "aws_ami_id" {
+  description = "AWS AMI ID, for instances."
 }
 
 variable "instance_type" {

@@ -108,7 +108,7 @@ resource "template_file" "user_data" {
 }
 
 resource "aws_launch_configuration" "elasticsearch" {
-  image_id = "${var.ami}"
+  image_id = "${var.aws_ami_id}"
   instance_type = "${var.instance_type}"
   security_groups = ["${split(",", replace(concat(aws_security_group.elasticsearch.id, ",", var.additional_security_groups), "/,\\s?$/", ""))}"]
   associate_public_ip_address = false
@@ -130,7 +130,7 @@ resource "aws_launch_configuration" "elasticsearch" {
 
 resource "aws_autoscaling_group" "elasticsearch" {
   availability_zones = ["${split(",", var.aws_availability_zones)}"]
-  vpc_zone_identifier = ["${split(",", var.subnets)}"]
+  vpc_zone_identifier = ["${split(",", var.aws_subnet_ids)}"]
   max_size = "${var.instances}"
   min_size = "${var.instances}"
   desired_capacity = "${var.instances}"
